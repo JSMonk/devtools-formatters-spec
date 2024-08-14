@@ -12,7 +12,7 @@ These revisions don't have widespread adoption in tools.
 The most recent specification is the v1 revision.  It's converted into MarkDown
 format for this repository.
 
-* [Revision 1](source-map-rev1.md)
+* [Revision 1](devtools-formatters-rev1.md)
 
 <!--
 There is an ongoing initiative to harden the specification, clarify it and to
