@@ -1,0 +1,178 @@
+<pre class='metadata'>
+Title: DevTools Formatters
+H1: DevTools Formatters
+Shortname: devtools-formatters
+Level: 1
+Status: STAGE0
+URL: TODO
+Editor: Artem Kobzar, JetBrains
+Former Editor: Sergei Vasilinetc, Google
+Former Editor: Brian Slesinsky, Google
+Former Editor: Paul Irish, Google
+Former Editor: Sebastian Zartner, W3C
+Previous Version: https://firefox-source-docs.mozilla.org/devtools-user/custom_formatters
+Abstract: A specification to API to control the display of JavaScript objects within a debugger and a console. This specification is a living document and describes a hardened version of the Custom Formatters documentation.
+Markup Shorthands: markdown yes
+Group: tc39
+</pre>
+
+<pre class=link-defaults>
+spec:html; type:element;
+    text:a
+    text:script
+    text:style
+    text:title
+    text:link
+spec:bikeshed-1; type:dfn; for:railroad; text:optional
+</pre>
+
+<pre class="biblio">
+{
+  "JsonML": {
+    "href": "http://www.jsonml.org/",
+    "title": "JsonML",
+    "publisher": "Stephen McKamey",
+    "status": "Standards Track"
+  }
+}
+</pre>
+
+## License
+
+This work is licensed under a [Creative Commons Attribution-ShareAlike 3.0 Unported License](http://creativecommons.org/licenses/by-sa/3.0/).
+
+## Introduction
+
+This document is a draft version of a hardened version of the Custom Formatters
+documentation.  In its current form, it's not a defined standard and is subject to
+modifications.  If you want to get involved, you will find more information under
+the following GitHub repositories:
+
+* [Spec Repository](TODO): holds the specification
+* [RFC Repository](TODO): meta repository for change suggestions to the specification.
+
+Background {#background}
+========================
+
+TODO
+
+Terminology {#terminology}
+==========================
+
+<dfn>DevTool</dfn> is a tool that gives the ability to explore a JavaScript object (typically a debugger or a console)
+
+<dfn>Object Preview</dfn> is a short summary of a JavaScript object in a debugger or a console.
+
+<dfn>Object Body Presentation</dfn> is a detailed presentation of a JavaScript object in a debugger or a console.
+
+<dfn>Formatter</dfn> is a JavaScript object that contains three methods: `header`, `hasBody`, and `body` stored in the global `devtoolsFormatters` array.
+
+<dfn>Template</dfn> is a [[JsonML]] encoded HTML tag 
+
+<dfn>Default Format</dfn> is a combination of [=object preview=] and [=object body presentation=] for a specific object that a debugger or a console shows if there is no custom [=formatter=] for the object.
+
+General Goals {#general-goals}
+==============================
+
+TODO
+
+DevTools Formatters API {#source-map-format}
+======================================
+
+The DevTools Formatters is an array of objects held in a global variable called `devtoolsFormatters`. Each object in this array represents a specific [=formatter=] that may handle a particular JavaScript object. Such objects have the following structure:
+
+
+```javascript
+globalThis.devtoolsFormatters = [
+  {
+    header: (value, config) => ...,
+    hasBody: (value, config) => ...,
+    body: (value, config) => ...
+  }
+];
+```
+
+All three functions take a JavaScript object as the first parameter (`value`) and an optional configuration object (`config`) as the second parameter, which allows passing additional information.
+
+<dfn><code>header</code></dfn> a function responsible for the `value` [=object preview=] in the [=devtool=]. 
+    Returns a [=template=] or `null`. If `null` is returned, the [=default format=] is used to display the object.
+
+<dfn><code>body</code></dfn> a function responsible for the `value` [=object body presentation=] in the [=devtool=]. 
+    Returns a [=template=] or `null`. If `null` is returned, the [=default format=] is used to display the object body.
+
+<dfn><code>hasBody</code></dfn> a hook responsible for notifying the [=devtool=] if the object has body (is expandable). 
+    Returns a boolean indicating whether the object can be expanded to show [=object body presentation=].
+
+Template Format {#template-format}
+======================================
+
+Each [=template=] is encoded in a format based on the [[JsonML]] standard. Each element is represented as a list in the format:
+
+```javascript
+[tagName, attributesObject, child1, …]
+```
+
+Only the following HTML tags are allowed in the [=template=]:
+
+- `<span>`
+- `<div>`
+- `<ol>`
+- `<ul>`
+- `<li>`
+- `<table>`
+- `<tr>`
+- `<td>`.
+
+The `attributesObject` is an object that may contain only the `style` attribute.
+
+```javascript
+{"style": "name: value; ..."}
+```
+The `style` attribute is optional and may contain a string of CSS declarations. Only the following CSS properties are allowed:
+
+- `align*`
+- `background*` (`background-image` only allows `data:` URLs)
+- `border*`
+- `box*`
+- `clear`
+- `color`
+- `cursor`
+- `display`
+- `float`
+- `font*`
+- `justify*`
+- `line*`
+- `margin*`
+- `padding*`
+- `position` (only the values `static` and `relative` are accepted)
+- `text*`
+- `transition*`
+- `outline*`
+- `vertical-align`
+- `white-space`
+- `word*`
+- `writing*`
+- `width`
+- `min-width`
+- `max-width`
+- `height`
+- `min-height`
+- `max-height`
+
+A child can be another template or a string.
+
+There is also a special tag - `<object>` that represents a reference to an object to which the [=devtool=] should apply the DevTools Formatters recursively. It doesn't contain any child element and has different attribute restrictions.
+
+```javascript
+["object", objectAttributesObject]
+```
+
+The `objectAttributesObject` is an object that may contain only the `object` and the `config` attribute.
+
+```javascript
+{"object": objectToInspect, "config": configObject}
+```
+
+The `object` attribute is required and should contain a reference to the object to which we want to apply the DevTools Formatters recursively.
+
+The `config` attribute is optional and not restricted. It allows passing additional information and will be passed as the second parameter of the `header`, `hasBody`, and `body` functions.
